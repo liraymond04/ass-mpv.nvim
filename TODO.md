@@ -1,0 +1,35 @@
+# TODO
+
+- [ ] Interaction Neovim -> MPV
+    - [ ] Aegisub keymaps (ex. S for start of dialogue, D for end)
+    - [ ] Scrub MPV playback time with cursor position in ASS file
+    - [ ] Jump to playback positions from dialogue start and end times
+    - [ ] Playback controls (eg. Pause, Play, Seek Left/Right, Vol Up/Down)
+        - [x] Pause
+        - [ ] Play
+        - [ ] Seek Left/Right
+        - [ ] Vol Up/Down
+- [ ] Interaction MPV -> Neovim
+    - [ ] Edit dialogue timings based on MPV playback time (use keymap, then grab and replace times)
+    - [ ] Change cursor position based on MPV playback time (while playing, change cursor line)
+- [ ] Editing
+    - [ ] Floating buffer to edit subtitle text
+    - [ ] Move cursor or selection to columns (eg. Layer, Effect, Text)
+    - [ ] Apply effects or styles to selection
+    - [ ] Shift timings of selection or whole file
+- [ ] Translation assistant
+    - [ ] Add translation metadata as comments
+    - [ ] Hide lines and show translation text as virtual text
+    - [ ] Support multiple languages per line
+        - [ ] (plugin-config) Show multiple per line, or just main locale
+        - [ ] Command to switch main locale, save settings in project garbage
+- [ ] (Optional) export multiple each languages to new .ASS files
+    - [ ] Custom subtitle timings or effects, if they need to differ from original
+    - [ ] User command to start generation and export
+    - [ ] (config) Regex/template string for file name export
+- [ ] Config project garbage
+    - [ ] Versioning
+    - [ ] Project metadata (eg. Name, Description, Authors)
+    - [ ] Video/audio file fallback if no Aegisub project garbage present
+    - [ ] Config settings (such as language)
+- [ ] (plugin-config) Mappings for subtitle playback and editing
