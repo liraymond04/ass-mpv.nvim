@@ -4,7 +4,7 @@
     - [ ] Aegisub keymaps (ex. S for start of dialogue, D for end)
     - [ ] Scrub MPV playback time with cursor position in ASS file
     - [ ] Jump to playback positions from dialogue start and end times
-    - [ ] Playback controls (eg. Pause, Play, Seek Left/Right, Vol Up/Down)
+    - [ ] Playback controls (e.g. Pause, Play, Seek Left/Right, Vol Up/Down)
         - [x] Pause
         - [ ] Play
         - [ ] Seek Left/Right
@@ -14,7 +14,7 @@
     - [ ] Change cursor position based on MPV playback time (while playing, change cursor line)
 - [ ] Editing
     - [ ] Floating buffer to edit subtitle text
-    - [ ] Move cursor or selection to columns (eg. Layer, Effect, Text)
+    - [ ] Move cursor or selection to columns (e.g. Layer, Effect, Text)
     - [ ] Apply effects or styles to selection
     - [ ] Shift timings of selection or whole file
 - [ ] Translation assistant
@@ -29,7 +29,62 @@
     - [ ] (config) Regex/template string for file name export
 - [ ] Config project garbage
     - [ ] Versioning
-    - [ ] Project metadata (eg. Name, Description, Authors)
+    - [ ] Project metadata (e.g. Name, Description, Authors)
     - [ ] Video/audio file fallback if no Aegisub project garbage present
     - [ ] Config settings (such as language)
 - [ ] (plugin-config) Mappings for subtitle playback and editing
+
+## Internals
+
+- [ ] MPV IPC and Session Management
+    - [x] Check command availability (`mpv`, `socat`)
+    - [x] Per-buffer session tracking (`M.sessions`)
+    - [x] Socket path generation and cleanup (`socket_path_for`, `_cleanup`)
+    - [x] Launch/stop MPV jobs (`open_for_buf`, `quit_for_buf`)
+    - [x] Send JSON-RPC commands via one‐off (`send_ipc`) and persistent pipes (`send_ipc_buf`)
+    - [x] Wait/retry for socket to appear (`wait_for_socket`)
+    - [x] Async reader for JSON events (`_start_event_reader`)
+    - [x] Dispatch "property-change" and generic events (`_handle_event`, `observe_property`)
+    - [ ] Robust reconnect logic if MPV crashes and respawns
+    - [ ] **Tests**
+        - [ ] Unit: serialization of JSON-RPC payloads  
+        - [ ] Unit: parsing and dispatch of incoming events  
+        - [ ] Integration: mock socat + UNIX socket to verify round-trip messages 
+- [ ] Keymap and UI Layer
+    - [ ] Centralized Neovim keymap module and registration
+    - [ ] Floating window component for subtitle editing (text entry + live preview)
+    - [ ] Virtual-text overlay for live translation hints or timings
+    - [ ] Neovim cursor events
+- [ ] ASS File Parsing & Editing
+    - [ ] Buffer‐level editing
+    - [ ] ASS file AST/parser to find and update timing fields
+    - [ ] Dialogue entry tables and iteration
+    - [ ] Cursor navigation helpers (move to columns, select within column)
+    - [ ] Cursor selection actions (apply commands and macros to multiple lines)
+    - [ ] **Tests**
+        - [ ] Unit: parse a variety of real-world `.ass` snippets into AST
+        - [ ] Unit: serialize AST back into exactly equivalent `.ass` text
+        - [ ] Integration: load a sample file, perform a timing shift, and diff output
+- [ ] Translation Assistant
+    - [ ] Translation metadata model (e.g. `line.translations = { en = "...", ja = "..." }`)
+    - [ ] Commands to add/update translation inline (store as comments in `[Events]`)
+    - [ ] Virtual‐text manager
+    - [ ] **Tests**
+        - [ ] Unit: metadata model correctly stores multiple locales
+        - [ ] Integration: apply translations and render buffer virtual text
+- [ ] File Export/Generation
+    - [ ] Export engine (using template/regex) to output to filesystem
+    - [ ] Hook to apply locale-specific timing/effects tweaks before export
+    - [ ] Validate export filenames and format
+- [ ] Plugin Config and Project Garbage
+    - [ ] Neovim plugin setup function and config tables (access values via `ass-mpv.util`)
+    - [ ] Read/write `[Aegisub Project Garbage]` section
+    - [ ] Model for project metadata (name, source video, authors, version)
+    - [ ] Fallback logic, infer video path and filename from `.ass` directory if garbage missing
+- [ ] Error Handling and Logging
+    - [ ] Centralized logging facility (levels: DEBUG, INFO, WARN, ERROR)
+    - [ ] Graceful notifications for failed IPC, parse errors, missing files
+    - [ ] Plugin config option to enable verbose debug logs to file for support
+- [ ] Testing and CI/CD
+    - [ ] Automated pre-commit linting/formatting of Lua code
+    - [ ] GitHub Actions workflow to run tests on push
