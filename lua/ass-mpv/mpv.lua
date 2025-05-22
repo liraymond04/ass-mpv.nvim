@@ -3,7 +3,7 @@ local fn = vim.fn
 local api = vim.api
 local M = {}
 
-local util = require("ass.util")
+local util = require("ass-mpv.util")
 
 ---
 ---TODO

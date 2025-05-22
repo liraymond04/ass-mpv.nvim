@@ -1,6 +1,6 @@
 local M = {}
 
-local mpv = require("ass.mpv")
+local mpv = require("ass-mpv.mpv")
 
 local main_key = "m"
 
