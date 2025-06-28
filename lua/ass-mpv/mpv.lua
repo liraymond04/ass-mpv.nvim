@@ -163,6 +163,15 @@ M._start_event_reader = function(bufnr)
                     M._cleanup(bufnr)
                     vim.notify("MPV session ended", vim.log.levels.WARN)
                 end)
+
+                -- Attempt to reconnect to MPV
+                local _sess = M.sessions[bufnr]
+                if _sess then
+                    vim.defer_fn(function()
+                        M.reconnect(bufnr)
+                    end, 500) -- Retry after 500ms
+                end
+
                 return
             end
 
