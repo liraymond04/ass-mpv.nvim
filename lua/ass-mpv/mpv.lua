@@ -5,14 +5,6 @@ local M = {}
 
 local util = require("ass-mpv.util")
 
----
----TODO
----if AssMpvOpen does not provide any arguments, read the current .ass for
----[Aegisub Project Garbage] and atttempt to find the video file that is
----saved there (might need to first find the directory that the .ass) file
----is in to find the correct full path to the video file
----
-
 if not util.is_command_available("mpv") then
     vim.notify("Error: 'mpv' is not installed", vim.log.levels.ERROR)
     return
