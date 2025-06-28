@@ -1,6 +1,20 @@
 local uv = vim.uv
 local fn = vim.fn
 local api = vim.api
+---
+---@class MPVSession
+---@field job_id integer The ID of the running MPV job
+---@field socket string Path to the IPC socket
+---@field ipc uv.uv_pipe_t|nil The IPC pipe for communication
+---@field listeners table<string, function[]> Registered event listeners
+---@field watcher uv.uv_timer_t|nil Timer to watch for socket activity
+---@field reader uv.uv_pipe_t|nil Reader pipe for IPC communication
+---
+---@class MPV
+---A module to interact with MPV via IPC.
+---@field sessions table<integer, MPVSession> Tracks active MPV sessions (keyed by buffer number)
+---
+
 local M = {}
 
 local util = require("ass-mpv.util")
@@ -18,17 +32,18 @@ end
 M.sessions = {}
 
 ---
----Helper to build a per‐buffer socket path
----@param bufnr number the buffer number
+---Helper to build a per-buffer socket path.
+---@param bufnr integer The buffer number.
+---@return string The socket path.
 ---
 local socket_path_for = function(bufnr)
     return string.format("/tmp/ass_nvim_mpv_%d.sock", bufnr)
 end
 
 ---
----Helper that returns true if the job is still running
----@param job_id integer
----@return boolean
+---Helper to check if a job is still running.
+---@param job_id integer The job ID to check.
+---@return boolean True if the job is still running, false otherwise.
 ---
 local is_job_running = function(job_id)
     local status = vim.fn.jobwait({ job_id }, 0)[1]
@@ -39,9 +54,9 @@ local is_job_running = function(job_id)
 end
 
 ---
---- Send a JSON-RPC command to MPV via the IPC socket
----@param sock string path to the UNIX socket
----@param payload table the RPC command
+---Send a JSON-RPC command to MPV via the IPC socket.
+---@param sock string The path to the IPC socket.
+---@param payload table The JSON-RPC payload to send.
 ---
 local send_ipc = function(sock, payload)
     local json = fn.json_encode(payload)
@@ -51,9 +66,9 @@ local send_ipc = function(sock, payload)
 end
 
 ---
---- Send a JSON-RPC command to MPV via an existing IPC socket connection in a buffer
----@param bufnr integer buffer with IPC socket connection
----@param payload table the RPC command
+---Send a JSON-RPC command to MPV via an IPC socket connected in a buffer.
+---@param bufnr integer The buffer number with the IPC socket connection.
+---@param payload table The JSON-RPC payload to send.
 ---
 local send_ipc_buf = function(bufnr, payload)
     local sess = M.sessions[bufnr]
@@ -76,10 +91,10 @@ local send_ipc_buf = function(bufnr, payload)
 end
 
 ---
---- Observe an MPV property on the IPC socket connected in the buffer
----@param bufnr integer buffer with connected IPC socket
----@param request_id integer
----@param prop string
+---Observe an MPV property on the IPC socket connected to a buffer.
+---@param bufnr integer The buffer number with the connected IPC socket.
+---@param request_id integer The unique request ID for the observation.
+---@param prop string The MPV property to observe.
 ---
 local observe_property = function(bufnr, request_id, prop)
     local payload = { command = { "observe_property", request_id, prop } }
@@ -87,9 +102,9 @@ local observe_property = function(bufnr, request_id, prop)
 end
 
 ---
----Internal handler for dispatching MPV events to registered listeners
----@param bufnr integer
----@param msg any
+---Internal handler for dispatching MPV events to registered listeners.
+---@param bufnr integer The buffer number.
+---@param msg table The event message from MPV.
 ---
 M._handle_event = function(bufnr, msg)
     local ls = M.sessions[bufnr] and M.sessions[bufnr].listeners
@@ -116,8 +131,8 @@ M._handle_event = function(bufnr, msg)
 end
 
 ---
----Start reading MPV's IPC socket for JSON events and EOF
----@param bufnr integer
+--- Start reading MPV's IPC socket for JSON events and EOF.
+--- @param bufnr integer The buffer number.
 ---
 M._start_event_reader = function(bufnr)
     local sess = M.sessions[bufnr]
@@ -182,7 +197,9 @@ M._start_event_reader = function(bufnr)
 end
 
 ---
----Safe cleanup for a buffer’s session
+---Safely clean up a buffer's MPV session.
+---Stops the reader pipe, watcher, and the MPV process, and removes the socket file.
+---@param bufnr integer The buffer number.
 ---
 M._cleanup = function(bufnr)
     local sess = M.sessions[bufnr]
@@ -219,11 +236,11 @@ M._cleanup = function(bufnr)
 end
 
 ---
---- Wait for a UNIX socket to appear, then call `cb()`
----@param path     string: the socket path
----@param timeout  number: ms before giving up
----@param interval number: ms between checks
----@param cb       function: called once socket exists
+---Wait for a UNIX socket to appear, then call a callback function.
+---@param path string The path to the UNIX socket.
+---@param timeout number The maximum time (in milliseconds) to wait.
+---@param interval number The interval (in milliseconds) between checks.
+---@param cb function The callback function to invoke when the socket appears.
 ---
 local wait_for_socket = function(path, timeout, interval, cb)
     local elapsed = 0
@@ -260,9 +277,10 @@ local wait_for_socket = function(path, timeout, interval, cb)
 end
 
 ---
----Start MPV for this buffer (if not already running)
----@param bufnr number the buffer number
----@param file string | nil an override path to play (defaults to the current buffer's file)
+--- Start MPV for a specific buffer.
+--- If MPV is already running for the buffer, logs a notification instead.
+--- @param bufnr integer The buffer number.
+--- @param file string|nil The override path to play. Defaults to the current buffer's file.
 ---
 M.open_for_buf = function(bufnr, file)
     if M.sessions[bufnr] then
@@ -339,8 +357,9 @@ M.open_for_buf = function(bufnr, file)
 end
 
 ---
---- Quit MPV for this buffer
----@param bufnr (number) the buffer number
+---Quit MPV for a specific buffer.
+---Sends the "quit" command to MPV and cleans up the session.
+---@param bufnr integer The buffer number.
 ---
 M.quit_for_buf = function(bufnr)
     local sess = M.sessions[bufnr]
@@ -357,18 +376,23 @@ M.quit_for_buf = function(bufnr)
 end
 
 ---
---- Quit the session for the current buffer
+---Quit the MPV session for the current buffer.
 ---
 M.quit_current = function()
     M.quit_for_buf(api.nvim_get_current_buf())
 end
 
+---
+---Toggle pause for the MPV session in the current buffer.
+---
 M.pause_current = function()
     send_ipc_buf(api.nvim_get_current_buf(), { command = { "cycle", "pause" } })
 end
 
 ---
----Check if the buffer has a connected running MPV process
+---Check if the buffer has a connected, running MPV process.
+---@param bufnr integer The buffer number.
+---@return boolean True if MPV is running, false otherwise.
 ---
 M.is_running = function(bufnr)
     local sess = M.sessions[bufnr]
@@ -379,10 +403,10 @@ M.is_running = function(bufnr)
 end
 
 ---
----Register a callback for an MPV event or property
----@param bufnr integer buffer number
----@param event_name string name of event to run
----@param cb function callback function to run on event fire
+---Register a callback for an MPV event or property.
+---@param bufnr integer The buffer number.
+---@param event_name string The name of the event to listen for.
+---@param cb function The callback function to invoke when the event occurs.
 ---
 M.on = function(bufnr, event_name, cb)
     local sess = M.sessions[bufnr]
@@ -396,7 +420,9 @@ M.on = function(bufnr, event_name, cb)
 end
 
 ---
----Start observing properties
+---Start observing default MPV properties for a buffer.
+---Observes properties like "pause" and "playback-time".
+---@param bufnr integer The buffer number.
 ---
 M.observe_defaults = function(bufnr)
     local sess = M.sessions[bufnr]
@@ -410,7 +436,8 @@ end
 
 ---
 ---TODO
----Register callback functions to events
+---Register default listener callbacks for MPV events in a buffer.
+---@param bufnr integer The buffer number.
 ---
 M.register_listeners = function(bufnr)
     M.on(bufnr, "pause", function(data)

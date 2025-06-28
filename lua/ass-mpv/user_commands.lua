@@ -1,7 +1,16 @@
+---
+---@class ass_mpv_user_commands
+---@field register_commands fun(bufnr: integer): nil
+---
+
 local M = {}
 
 local mpv = require("ass-mpv.mpv")
 
+---
+---Register user commands for a specific buffer
+---@param bufnr integer Buffer number where commands should be registered
+---
 M.register_commands = function(bufnr)
   vim.api.nvim_buf_create_user_command(bufnr, "AssMpvOpen", function(cmd_args)
     mpv.open_for_buf(bufnr, cmd_args.args)

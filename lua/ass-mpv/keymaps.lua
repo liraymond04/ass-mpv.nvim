@@ -1,7 +1,17 @@
+---
+---@class ass_mpv_keymaps
+---@field init_keymaps fun(bufnr: integer, opts: table): nil
+---
+
 local M = {}
 
 local mpv = require("ass-mpv.mpv")
 
+---
+---Initialize keymaps for the provided buffer
+---@param bufnr integer Buffer number where the keymaps should be applied
+---@param opts PluginOptions Options including keymap configurations
+---
 M.init_keymaps = function(bufnr, opts)
   local function set_keymap(key, desc, callback)
     if key then

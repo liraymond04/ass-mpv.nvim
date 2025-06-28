@@ -1,9 +1,18 @@
+---
+---@class ass_mpv_autocmd
+---@field setup_autocmds fun(opts: table): nil
+---
+
 local M = {}
 local user_commands = require("ass-mpv.user_commands")
 
 local keymaps = require("ass-mpv.keymaps")
 local mpv = require("ass-mpv.mpv")
 
+---
+---Setup autocommands for the plugin
+---@param opts PluginOptions Options for configuring the autocommands
+---
 M.setup_autocmds = function(opts)
   vim.api.nvim_create_autocmd("FileType", {
     pattern = { "ass", "ssa" },
