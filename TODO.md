@@ -51,7 +51,7 @@
         - [ ] Unit: parsing and dispatch of incoming events  
         - [ ] Integration: mock socat + UNIX socket to verify round-trip messages 
 - [ ] Keymap and UI Layer
-    - [ ] Centralized Neovim keymap module and registration
+    - [x] Centralized Neovim keymap module and registration
     - [ ] Floating window component for subtitle editing (text entry + live preview)
     - [ ] Virtual-text overlay for live translation hints or timings
     - [ ] Neovim cursor events
