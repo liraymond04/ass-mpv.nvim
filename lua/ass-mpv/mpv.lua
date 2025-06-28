@@ -141,10 +141,10 @@ M._start_event_reader = function(bufnr)
         return
     end
 
-    ipc:connect(sess.socket, function(err)
-        if err then
+    ipc:connect(sess.socket, function(connection_err)
+        if connection_err then
             vim.schedule(function()
-                vim.notify("IPC connect error: " .. err, vim.log.levels.ERROR)
+                vim.notify("IPC connect error: " .. connection_err, vim.log.levels.ERROR)
             end)
             return
         end
@@ -168,7 +168,8 @@ M._start_event_reader = function(bufnr)
                 local _sess = M.sessions[bufnr]
                 if _sess then
                     vim.defer_fn(function()
-                        M.reconnect(bufnr)
+                        -- TODO handle real reconnect later
+                        -- M.reconnect(bufnr)
                     end, 500) -- Retry after 500ms
                 end
 
@@ -280,8 +281,29 @@ M.open_for_buf = function(bufnr, file)
     -- Determine what to play
     local target = file or api.nvim_buf_get_name(bufnr)
     if target == "" then
-        vim.notify("Buffer has no filename to play", vim.log.levels.ERROR)
-        return
+        -- Attempt to find the video file from the Aegisub Project Garbage section
+        local bufname = api.nvim_buf_get_name(bufnr)
+        local buf_dir = fn.fnamemodify(bufname, ":h")
+        local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
+        local video_file
+
+        for _, line in ipairs(lines) do
+            if line:match("^Video File:%s*(.+)") then
+                video_file = line:match("^Video File:%s*(.+)")
+                break
+            end
+        end
+
+        if video_file then
+            target = fn.fnamemodify(buf_dir .. "/" .. video_file, ":p")
+            if not fn.filereadable(target) then
+                vim.notify("Video file not found: " .. target, vim.log.levels.ERROR)
+                return
+            end
+        else
+            vim.notify("No video file found in Aegisub Project Garbage", vim.log.levels.ERROR)
+            return
+        end
     end
 
     -- Create an IPC socket path

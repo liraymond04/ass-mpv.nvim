@@ -45,7 +45,7 @@
     - [x] Wait/retry for socket to appear (`wait_for_socket`)
     - [x] Async reader for JSON events (`_start_event_reader`)
     - [x] Dispatch "property-change" and generic events (`_handle_event`, `observe_property`)
-    - [x] Robust reconnect logic if MPV crashes and respawns
+    - [ ] Robust reconnect logic if MPV crashes and respawns
     - [ ] **Tests**
         - [ ] Unit: serialization of JSON-RPC payloads  
         - [ ] Unit: parsing and dispatch of incoming events  
