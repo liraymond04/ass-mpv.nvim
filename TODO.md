@@ -81,10 +81,9 @@
     - [ ] Read/write `[Aegisub Project Garbage]` section
     - [ ] Model for project metadata (name, source video, authors, version)
     - [ ] Fallback logic, infer video path and filename from `.ass` directory if garbage missing
-- [ ] Error Handling and Logging
-    - [ ] Centralized logging facility (levels: DEBUG, INFO, WARN, ERROR)
-    - [ ] Graceful notifications for failed IPC, parse errors, missing files
-    - [ ] Plugin config option to enable verbose debug logs to file for support
+- [x] Error Handling and Logging
+    - [x] Centralized logging facility (levels: DEBUG, INFO, WARN, ERROR)
+    - [x] Graceful notifications for failed IPC, parse errors, missing files
 - [ ] Testing and CI/CD
     - [ ] Automated pre-commit linting/formatting of Lua code
     - [ ] GitHub Actions workflow to run tests on push
