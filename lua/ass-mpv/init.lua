@@ -16,6 +16,7 @@ local M = {}
 ---
 
 local autocmds = require("ass-mpv.autocmd")
+local logger = require("ass-mpv.logger")
 local main_key = "<leader>m"
 
 ---
@@ -39,7 +40,7 @@ M.setup = function(opts)
             if defaults[key] ~= nil then
                 return defaults[key]
             else
-                error("Missing required option: " .. key)
+                logger.error("Missing required option: " .. key)
             end
         end,
     }
@@ -49,7 +50,7 @@ M.setup = function(opts)
 
     -- Validate keymaps structure
     if type(opts.keymaps) ~= "table" then
-        error("'keymaps' must be a table.")
+        logger.error("'keymaps' must be a table.")
     end
 
     local missing_keys = {}
@@ -60,7 +61,7 @@ M.setup = function(opts)
     end
 
     if #missing_keys > 0 then
-        error("Invalid 'keymaps' table. Missing required keys: " .. table.concat(missing_keys, ", "))
+        logger.error("Invalid 'keymaps' table. Missing required keys: " .. table.concat(missing_keys, ", "))
     end
 
     autocmds.setup_autocmds(opts)

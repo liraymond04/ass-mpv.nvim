@@ -17,14 +17,15 @@ local api = vim.api
 
 local M = {}
 
+local logger = require("ass-mpv.logger")
 local util = require("ass-mpv.util")
 
 if not util.is_command_available("mpv") then
-    vim.notify("Error: 'mpv' is not installed", vim.log.levels.ERROR)
+    logger.error("Error: 'mpv' is not installed", true)
     return
 end
 if not util.is_command_available("socat") then
-    vim.notify("Error: 'socat' is not installed", vim.log.levels.ERROR)
+    logger.error("Error: 'socat' is not installed", true)
     return
 end
 
@@ -74,7 +75,7 @@ local send_ipc_buf = function(bufnr, payload)
     local sess = M.sessions[bufnr]
     if not sess or not sess.ipc then
         vim.schedule(function()
-            vim.notify("No IPC pipe to write to for buffer " .. bufnr, vim.log.levels.ERROR)
+            logger.error("No IPC pipe to write to for buffer " .. bufnr)
         end)
         return
     end
@@ -84,7 +85,7 @@ local send_ipc_buf = function(bufnr, payload)
     sess.ipc:write(json, function(write_err)
         if write_err then
             vim.schedule(function()
-                vim.notify("Failed to send IPC command: " .. write_err, vim.log.levels.ERROR)
+                logger.error("Failed to send IPC command: " .. write_err)
             end)
         end
     end)
@@ -144,14 +145,14 @@ M._start_event_reader = function(bufnr)
     sess.ipc = ipc
 
     if not ipc then
-        vim.notify("Failed to create new pipe for buffer: " .. bufnr)
+        logger.error("Failed to create new pipe for buffer: " .. bufnr)
         return
     end
 
     ipc:connect(sess.socket, function(connection_err)
         if connection_err then
             vim.schedule(function()
-                vim.notify("IPC connect error: " .. connection_err, vim.log.levels.ERROR)
+                logger.error("IPC connect error: " .. connection_err, true)
             end)
             return
         end
@@ -159,7 +160,7 @@ M._start_event_reader = function(bufnr)
         ipc:read_start(function(err, chunk)
             if err then
                 vim.schedule(function()
-                    vim.notify("IPC read error: " .. err, vim.log.levels.ERROR)
+                    logger.error("IPC read error: " .. err, true)
                 end)
                 return
             end
@@ -168,7 +169,7 @@ M._start_event_reader = function(bufnr)
                 -- EOF: MPV quit or crashed
                 vim.schedule(function()
                     M._cleanup(bufnr)
-                    vim.notify("MPV session ended", vim.log.levels.WARN)
+                    logger.warn("MPV session ended", true)
                 end)
 
                 -- Attempt to reconnect to MPV
@@ -265,10 +266,7 @@ local wait_for_socket = function(path, timeout, interval, cb)
                     timer:stop()
                     timer:close()
                     vim.schedule(function()
-                        vim.notify(
-                            ("Timed out (%dms) waiting for MPV socket at %s"):format(timeout, path),
-                            vim.log.levels.ERROR
-                        )
+                        logger.error(("Timed out (%dms) waiting for MPV socket at %s"):format(timeout, path), true)
                     end)
                 end
             end
@@ -284,7 +282,7 @@ end
 ---
 M.open_for_buf = function(bufnr, file)
     if M.sessions[bufnr] then
-        vim.notify("MPV is already running for this buffer", vim.log.levels.INFO)
+        logger.info("MPV is already running for this buffer", true)
         return
     end
 
@@ -307,11 +305,11 @@ M.open_for_buf = function(bufnr, file)
         if video_file then
             target = fn.fnamemodify(buf_dir .. "/" .. video_file, ":p")
             if not fn.filereadable(target) then
-                vim.notify("Video file not found: " .. target, vim.log.levels.ERROR)
+                logger.error("Video file not found: " .. target, true)
                 return
             end
         else
-            vim.notify("No video file found in Aegisub Project Garbage", vim.log.levels.ERROR)
+            logger.error("No video file found in Aegisub Project Garbage", true)
             return
         end
     end
@@ -331,7 +329,7 @@ M.open_for_buf = function(bufnr, file)
     }
     local job_id = fn.jobstart(cmd, { detach = true })
     if job_id <= 0 then
-        vim.notify("Failed to launch MPV", vim.log.levels.ERROR)
+        logger.error("Failed to launch MPV", true)
         return
     end
 
@@ -343,12 +341,12 @@ M.open_for_buf = function(bufnr, file)
     }
 
     -- vim.notify("MPV started (buf #" .. bufnr .. ")", vim.log.levels.INFO)
-    vim.notify("Buffer " .. bufnr .. ": MPV starting...", vim.log.levels.INFO)
+    logger.info("Buffer " .. bufnr .. ": MPV starting...", true)
 
     -- Wait up to 2 seconds, checking every 50ms
     wait_for_socket(sock, 2000, 50, function()
         vim.schedule(function()
-            vim.notify("MPV socket ready, starting event reader", vim.log.levels.DEBUG)
+            logger.debug("MPV socket ready, starting event reader", true)
         end)
         M._start_event_reader(bufnr)
         M.observe_defaults(bufnr)
@@ -372,7 +370,7 @@ M.quit_for_buf = function(bufnr)
     vim.defer_fn(function()
         M._cleanup(bufnr)
     end, 200)
-    vim.notify("MPV stopped (buf #" .. bufnr .. ")", vim.log.levels.INFO)
+    logger.info("MPV stopped (buf #" .. bufnr .. ")", true)
 end
 
 ---
