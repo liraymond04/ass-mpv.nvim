@@ -2,22 +2,50 @@ local uv = vim.uv
 local fn = vim.fn
 local api = vim.api
 ---
+---A table of registered event listeners.
+---@alias MPVEventCallback fun(bufnr: integer, data: any): nil
+---The callback receives an `any` data payload, which depends on the event or property being observed.
+---
+---A table of registered event listeners.
+---@class ListenerTable
+---@field [string] MPVEventCallback[] A list of callbacks for each event.
+---
+---Centralized property callbacks table
+---@class ProperyCallbacks
+---@field [string] MPVEventCallback Event callback to run for property.
+---
 ---@class MPVSession
 ---@field job_id integer The ID of the running MPV job
 ---@field socket string Path to the IPC socket
----@field ipc uv.uv_pipe_t|nil The IPC pipe for communication
----@field listeners table<string, function[]> Registered event listeners
----@field watcher uv.uv_timer_t|nil Timer to watch for socket activity
----@field reader uv.uv_pipe_t|nil Reader pipe for IPC communication
+---@field ipc uv.uv_pipe_t? The IPC pipe for communication
+---@field listeners ListenerTable Registered event listeners
+---@field watcher uv.uv_timer_t? Timer to watch for socket activity
+---@field reader uv.uv_pipe_t? Reader pipe for IPC communication
+---
+---A table to track active MPV sessions, keyed by buffer number.
+---@class MPVSessionTable
+---@field [integer] MPVSession
 ---
 ---@class MPV
 ---A module to interact with MPV via IPC.
----@field sessions table<integer, MPVSession> Tracks active MPV sessions (keyed by buffer number)
+---@field sessions MPVSessionTable Tracks active MPV sessions
 ---
 
 local M = {}
 
-local aegisub = require("ass-mpv.aegisub")
+---
+---Property callbacks: string -> MPVEventCallback
+---@type ProperyCallbacks
+---
+M.property_callbacks = {
+    ["pause"] = function(bufnr, data)
+        print(("[%d] Paused: %s"):format(bufnr, tostring(data)))
+    end,
+    ["playback-time"] = function(bufnr, data)
+        print(("[%d] Playback-time: %s"):format(bufnr, tostring(data)))
+    end,
+}
+
 local logger = require("ass-mpv.logger")
 local util = require("ass-mpv.util")
 
@@ -30,8 +58,17 @@ if not util.is_command_available("socat") then
     return
 end
 
----Track sessions: bufnr -> { job_id = ..., socket = ... }
-M.sessions = {}
+---
+---Track sessions: bufnr -> MPVSession
+---@type MPVSessionTable
+---
+M.sessions = setmetatable({}, {
+---@diagnostic disable-next-line: unused-local
+    __index = function(_, bufnr)
+        -- Custom behavior for undefined buffer numbers
+        return nil
+    end,
+})
 
 ---
 ---Helper to build a per-buffer socket path.
@@ -118,7 +155,7 @@ M._handle_event = function(bufnr, msg)
         local handlers = ls[msg.name]
         if handlers then
             for _, cb in ipairs(handlers) do
-                vim.schedule_wrap(cb)(msg.data)
+                vim.schedule_wrap(cb)(bufnr, msg.data)
             end
         end
     elseif msg.event then
@@ -126,7 +163,7 @@ M._handle_event = function(bufnr, msg)
         local handlers = ls[msg.event]
         if handlers then
             for _, cb in ipairs(handlers) do
-                vim.schedule_wrap(cb)(msg)
+                vim.schedule_wrap(cb)(bufnr, msg)
             end
         end
     end
@@ -348,7 +385,12 @@ M.open_for_buf = function(bufnr, file)
     M.sessions[bufnr] = {
         job_id = job_id,
         socket = sock,
-        listeners = {},
+        listeners = setmetatable({}, {
+---@diagnostic disable-next-line: unused-local
+            __index = function(_, event_name)
+                return {}
+            end,
+        }),
     }
 
     -- vim.notify("MPV started (buf #" .. bufnr .. ")", vim.log.levels.INFO)
@@ -428,8 +470,7 @@ M.on = function(bufnr, event_name, cb)
 end
 
 ---
----Start observing default MPV properties for a buffer.
----Observes properties like "pause" and "playback-time".
+---Start observing default MPV properties for a buffer using the property_callbacks table.
 ---@param bufnr integer The buffer number.
 ---
 M.observe_defaults = function(bufnr)
@@ -437,23 +478,23 @@ M.observe_defaults = function(bufnr)
     if not sess then
         return
     end
-    -- request-IDs are arbitrary, unique per property
-    observe_property(bufnr, 1, "pause")
-    observe_property(bufnr, 2, "playback-time")
+
+    -- Assign unique request IDs and observe each property
+    local request_id = 1
+    for prop_name, _ in pairs(M.property_callbacks) do
+        observe_property(bufnr, request_id, prop_name)
+        request_id = request_id + 1
+    end
 end
 
 ---
----TODO
----Register default listener callbacks for MPV events in a buffer.
+---Register default listener callbacks for MPV events using the property_callbacks table.
 ---@param bufnr integer The buffer number.
 ---
 M.register_listeners = function(bufnr)
-    M.on(bufnr, "pause", function(data)
-        print("Paused: " .. tostring(data))
-    end)
-    M.on(bufnr, "playback-time", function(data)
-        print("Playback-time: " .. tostring(data))
-    end)
+    for prop_name, callback in pairs(M.property_callbacks) do
+        M.on(bufnr, prop_name, callback)
+    end
 end
 
 return M
