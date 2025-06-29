@@ -6,6 +6,7 @@
 local M = {}
 local user_commands = require("ass-mpv.user_commands")
 
+local aegisub = require("ass-mpv.aegisub")
 local keymaps = require("ass-mpv.keymaps")
 local mpv = require("ass-mpv.mpv")
 
@@ -22,6 +23,18 @@ M.setup_autocmds = function(opts)
             keymaps.init_keymaps(bufnr, opts)
 
             user_commands.register_commands(bufnr)
+
+            -- handle project metadata
+            local target = vim.api.nvim_buf_get_name(bufnr)
+            local sections, _ = require("ass-mpv.aegisub").parse_ass(target)
+            local metadata = aegisub.read_metadata(sections["Script Info"])
+            if not next(metadata) then
+                aegisub.write_metadata(target, {
+                    name = "Default Project",
+                    version = "1.0",
+                    authors = {},
+                })
+            end
 
             vim.api.nvim_create_autocmd({ "BufWipeout", "BufDelete" }, {
                 buffer = bufnr,

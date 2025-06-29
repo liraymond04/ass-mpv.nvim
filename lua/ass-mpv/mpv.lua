@@ -17,6 +17,7 @@ local api = vim.api
 
 local M = {}
 
+local aegisub = require("ass-mpv.aegisub")
 local logger = require("ass-mpv.logger")
 local util = require("ass-mpv.util")
 
@@ -302,15 +303,25 @@ M.open_for_buf = function(bufnr, file)
             end
         end
 
+        local fallback = util.fallback_video_path(bufname)
+
         if video_file then
             target = fn.fnamemodify(buf_dir .. "/" .. video_file, ":p")
             if not fn.filereadable(target) then
                 logger.error("Video file not found: " .. target, true)
-                return
+                if fallback then
+                    target = fallback
+                else
+                    return
+                end
             end
         else
-            logger.error("No video file found in Aegisub Project Garbage", true)
-            return
+            if fallback then
+                target = fallback
+            else
+                logger.error("No video file found in Aegisub Project Garbage", true)
+                return
+            end
         end
     end
 
@@ -413,7 +424,6 @@ M.on = function(bufnr, event_name, cb)
         return
     end
     sess.listeners[event_name] = sess.listeners[event_name] or {}
-    print("bruh")
     table.insert(sess.listeners[event_name], cb)
 end
 

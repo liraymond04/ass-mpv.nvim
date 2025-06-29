@@ -27,9 +27,9 @@
     - [ ] Custom subtitle timings or effects, if they need to differ from original
     - [ ] User command to start generation and export
     - [ ] (config) Regex/template string for file name export
-- [ ] Config project garbage
+- [ ] Config project metadata
     - [ ] Versioning
-    - [ ] Project metadata (e.g. Name, Description, Authors)
+    - [x] Project metadata (e.g. Name, Description, Authors)
     - [ ] Video/audio file fallback if no Aegisub project garbage present
     - [ ] Config settings (such as language)
 - [ ] (plugin-config) Mappings for subtitle playback and editing
@@ -76,11 +76,10 @@
     - [ ] Export engine (using template/regex) to output to filesystem
     - [ ] Hook to apply locale-specific timing/effects tweaks before export
     - [ ] Validate export filenames and format
-- [ ] Plugin Config and Project Garbage
-    - [ ] Neovim plugin setup function and config tables (access values via `ass-mpv.util`)
-    - [ ] Read/write `[Aegisub Project Garbage]` section
-    - [ ] Model for project metadata (name, source video, authors, version)
-    - [ ] Fallback logic, infer video path and filename from `.ass` directory if garbage missing
+- [x] Plugin Config and Project Metadata
+    - [x] Neovim plugin setup function and config tables
+    - [x] Model for project metadata (name, source video, authors, version)
+    - [x] Fallback logic, infer video path and filename from `.ass` directory if garbage missing video file
 - [x] Error Handling and Logging
     - [x] Centralized logging facility (levels: DEBUG, INFO, WARN, ERROR)
     - [x] Graceful notifications for failed IPC, parse errors, missing files
